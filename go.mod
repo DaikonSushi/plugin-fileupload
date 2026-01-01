@@ -14,4 +14,4 @@ require (
 )
 
 // 本地开发时使用（发布到 GitHub 前注释掉这行）
-// replace github.com/DaikonSushi/bot-platform => /Users/hovanzhang/git_repo/napcat/bot-platform
+replace github.com/DaikonSushi/bot-platform => /Users/hovanzhang/git_repo/napcat/bot-platform

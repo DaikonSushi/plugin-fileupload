@@ -145,7 +145,7 @@ func (p *FileUploadPlugin) handleTestFile(bot *pluginsdk.BotClient, args []strin
 
 	// Upload based on message type
 	if msg.GroupID > 0 {
-		err = bot.UploadGroupFile(msg.GroupID, testFile, fileName)
+		err = bot.UploadGroupFile(msg.GroupID, testFile, fileName, "/")
 		if err != nil {
 			bot.Reply(msg, pluginsdk.Text(fmt.Sprintf("❌ Group upload failed: %v", err)))
 		} else {
@@ -254,7 +254,7 @@ func (p *FileUploadPlugin) handleCreateFile(bot *pluginsdk.BotClient, args []str
 
 	// Upload based on message type
 	if msg.GroupID > 0 {
-		err = bot.UploadGroupFile(msg.GroupID, testFile, fileName)
+		err = bot.UploadGroupFile(msg.GroupID, testFile, fileName, "/")
 		if err != nil {
 			bot.Reply(msg, pluginsdk.Text(fmt.Sprintf("❌ Upload failed: %v", err)))
 		} else {

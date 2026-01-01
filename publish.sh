@@ -1,134 +1,91 @@
 #!/bin/bash
 
-# Plugin FileUpload - Quick Start Script
-# This script helps you quickly publish the plugin to GitHub
+# Plugin FileUpload - GitHub Release Script
+# This script helps you publish the plugin to GitHub
 
 set -e
 
-echo "🚀 Plugin FileUpload - Quick Start"
-echo "=================================="
+echo "🚀 Plugin FileUpload - GitHub Release Script"
+echo "=============================================="
 echo ""
 
-# Check if we're in the right directory
-if [ ! -f "main.go" ]; then
-    echo "❌ Error: main.go not found. Please run this script from the plugin-fileupload directory."
+# Check if version is provided
+if [ -z "$1" ]; then
+    echo "❌ Error: Version number required"
+    echo ""
+    echo "Usage: ./publish.sh <version>"
+    echo "Example: ./publish.sh 1.0.0"
+    echo ""
     exit 1
 fi
 
-# Get GitHub username
-read -p "Enter your GitHub username (default: DaikonSushi): " GITHUB_USER
-GITHUB_USER=${GITHUB_USER:-DaikonSushi}
+VERSION=$1
+TAG="v${VERSION}"
 
-# Get repository name
-read -p "Enter repository name (default: plugin-fileupload): " REPO_NAME
-REPO_NAME=${REPO_NAME:-plugin-fileupload}
-
-# Get version
-read -p "Enter version tag (default: v1.0.0): " VERSION
-VERSION=${VERSION:-v1.0.0}
-
-echo ""
-echo "📋 Configuration:"
-echo "   GitHub User: $GITHUB_USER"
-echo "   Repository: $REPO_NAME"
-echo "   Version: $VERSION"
+echo "📦 Preparing release ${TAG}"
 echo ""
 
-read -p "Continue? (y/n): " CONFIRM
-if [ "$CONFIRM" != "y" ]; then
-    echo "❌ Aborted."
-    exit 0
-fi
-
-echo ""
-echo "🔧 Step 1: Checking Git status..."
-
-if [ -d ".git" ]; then
-    echo "✅ Git repository already initialized"
-else
-    echo "📦 Initializing Git repository..."
-    git init
-    echo "✅ Git repository initialized"
-fi
-
-echo ""
-echo "🔧 Step 2: Adding files..."
-git add .
-
-echo ""
-echo "🔧 Step 3: Committing changes..."
-if git diff-index --quiet HEAD --; then
-    echo "ℹ️  No changes to commit"
-else
-    git commit -m "Initial commit: File upload test plugin for bot-platform"
-    echo "✅ Changes committed"
-fi
-
-echo ""
-echo "🔧 Step 4: Setting up remote..."
-REMOTE_URL="https://github.com/$GITHUB_USER/$REPO_NAME.git"
-
-if git remote | grep -q "origin"; then
-    echo "ℹ️  Remote 'origin' already exists"
-    CURRENT_URL=$(git remote get-url origin)
-    if [ "$CURRENT_URL" != "$REMOTE_URL" ]; then
-        echo "⚠️  Current remote URL: $CURRENT_URL"
-        echo "⚠️  Expected URL: $REMOTE_URL"
-        read -p "Update remote URL? (y/n): " UPDATE_REMOTE
-        if [ "$UPDATE_REMOTE" = "y" ]; then
-            git remote set-url origin "$REMOTE_URL"
-            echo "✅ Remote URL updated"
-        fi
+# Check if git repo is clean
+if [ -n "$(git status --porcelain)" ]; then
+    echo "⚠️  Warning: You have uncommitted changes"
+    echo ""
+    git status --short
+    echo ""
+    read -p "Continue anyway? (y/N) " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "❌ Aborted"
+        exit 1
     fi
-else
-    git remote add origin "$REMOTE_URL"
-    echo "✅ Remote 'origin' added"
 fi
 
-echo ""
-echo "🔧 Step 5: Setting main branch..."
-git branch -M main
-
-echo ""
-echo "🔧 Step 6: Pushing to GitHub..."
-echo "ℹ️  You may need to enter your GitHub credentials"
-git push -u origin main
-
-echo ""
-echo "🔧 Step 7: Creating and pushing tag..."
-if git tag | grep -q "$VERSION"; then
-    echo "⚠️  Tag $VERSION already exists"
-    read -p "Delete and recreate tag? (y/n): " RECREATE_TAG
-    if [ "$RECREATE_TAG" = "y" ]; then
-        git tag -d "$VERSION"
-        git push origin :refs/tags/"$VERSION" 2>/dev/null || true
-        git tag -a "$VERSION" -m "Release $VERSION: File upload test plugin"
-        git push origin "$VERSION"
-        echo "✅ Tag recreated and pushed"
-    fi
-else
-    git tag -a "$VERSION" -m "Release $VERSION: File upload test plugin"
-    git push origin "$VERSION"
-    echo "✅ Tag created and pushed"
+# Check if tag already exists
+if git rev-parse "$TAG" >/dev/null 2>&1; then
+    echo "❌ Error: Tag ${TAG} already exists"
+    echo ""
+    echo "To delete the tag:"
+    echo "  git tag -d ${TAG}"
+    echo "  git push origin :refs/tags/${TAG}"
+    echo ""
+    exit 1
 fi
 
+# Verify go.mod has replace directive (for local dev)
+if ! grep -q "^replace github.com/DaikonSushi/bot-platform" go.mod; then
+    echo "⚠️  Warning: go.mod doesn't have replace directive"
+    echo "This is OK for GitHub release, but may fail local build"
+    echo ""
+fi
+
+# Test local build
+echo "🔨 Testing local build..."
+go mod tidy
+go build -ldflags="-s -w" -o fileupload-plugin-test .
+rm fileupload-plugin-test
+echo "✅ Local build successful"
 echo ""
-echo "✅ Done! Plugin published to GitHub"
+
+# Create and push tag
+echo "🏷️  Creating tag ${TAG}..."
+git tag -a "${TAG}" -m "Release ${TAG}"
+echo "✅ Tag created"
 echo ""
-echo "📦 Next steps:"
-echo "   1. Visit: https://github.com/$GITHUB_USER/$REPO_NAME"
-echo "   2. Check Actions tab for build status"
-echo "   3. Wait for build to complete (~3-5 minutes)"
-echo "   4. Check Releases tab for binaries"
+
+echo "📤 Pushing tag to GitHub..."
+git push origin "${TAG}"
+echo "✅ Tag pushed"
 echo ""
-echo "🔧 Install in bot-platform:"
-echo "   cd /path/to/bot-platform"
-echo "   ./botctl install https://github.com/$GITHUB_USER/$REPO_NAME"
-echo "   ./botctl start fileupload"
+
+echo "🎉 Release ${TAG} published!"
 echo ""
-echo "🧪 Test commands:"
-echo "   /filehelp"
-echo "   /testfile"
-echo "   /testfile medium json"
-echo "   /createfile test.txt Hello World!"
+echo "GitHub Actions will now:"
+echo "  1. Build binaries for all platforms"
+echo "  2. Create a GitHub Release"
+echo "  3. Upload all binaries to the release"
+echo ""
+echo "Check progress at:"
+echo "  https://github.com/DaikonSushi/plugin-fileupload/actions"
+echo ""
+echo "Release will be available at:"
+echo "  https://github.com/DaikonSushi/plugin-fileupload/releases/tag/${TAG}"
 echo ""
