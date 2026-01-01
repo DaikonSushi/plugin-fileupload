@@ -30,12 +30,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkout bot-platform
-        uses: actions/checkout@v4
-        with:
-          repository: DaikonSushi/bot-platform
-          path: ../bot-platform
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -43,8 +37,8 @@ jobs:
 
       - name: Update go.mod for CI
         run: |
-          # Update replace directive to use relative path in CI
-          sed -i 's|replace github.com/DaikonSushi/bot-platform => .*|replace github.com/DaikonSushi/bot-platform => ../bot-platform|' go.mod
+          # Remove local replace directive for CI build
+          sed -i '/^replace/d' go.mod
           cat go.mod
 
       - name: Get dependencies
