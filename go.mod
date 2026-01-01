@@ -2,7 +2,7 @@ module github.com/DaikonSushi/plugin-fileupload
 
 go 1.24.0
 
-require github.com/DaikonSushi/bot-platform v0.0.1
+require github.com/DaikonSushi/bot-platform v0.0.2
 
 require (
 	golang.org/x/net v0.47.0 // indirect
